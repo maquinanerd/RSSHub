@@ -1,64 +1,49 @@
+import type { Data } from '@/types';
 import type { Context } from 'hono';
-import type { DataItem } from '@/types';
+import { URL } from 'node:url';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { load } from 'cheerio';
-import { parseDate } from '@/utils/parse-date';
-import { art } from '@/utils/render';
-import path from 'node:path';
 
-const baseUrl = 'https://www.lance.com.br';
+const fetcher = (path: string, ctx: Context): Promise<Data> => {
+    const base = `https://esporte.uol.com.br/futebol/${path}/`;
 
-export const fetchLance = async (ctx: Context) => {
-    const slug = ctx.req.param('slug');
-    const url = `${baseUrl}/${slug}`;
+    return cache.tryGet(base, async () => {
+        const { data: html } = await got(base);
+        const $ = load(html);
 
-    const { data: response } = await got(url);
-    const $ = load(response);
+        const pageTitle = $('title').text();
+        const description = $('meta[name="description"]').attr('content') || pageTitle;
 
-    const feedTitle = $('title').first().text().split('|')[0].trim();
+        const cards = $('article a, .results-items a, .cards-list a, .thumb-caption a');
 
-    const list = $('.list-item-wrapper a')
-        .toArray()
-        .map((item) => {
-            const element = $(item);
-            const link = new URL(element.attr('href') as string, baseUrl).href;
-            const title = element.find('h2, .item-title').text().trim();
-            return { title, link };
-        })
-        .filter((item) => item.link && item.title);
-
-    const items = await Promise.all(
-        list.map((item) =>
-            cache.tryGet(item.link, async () => {
-                const { data: detailResponse } = await got(item.link);
-                const $$ = load(detailResponse);
-
-                $$('.related-content, .ads-container, .OUTBRAIN, [class*="ads"]').remove();
-
-                const description = art(path.join(__dirname, 'templates/description.art'), {
-                    image: $$('.lazyload[data-src]').first().attr('data-src'),
-                    content: $$('.content-container').html(),
-                });
-
-                const pubDate = $$('div.author-info > p > time').attr('datetime');
-
-                const dataItem: DataItem = {
-                    title: item.title,
-                    link: item.link,
-                    description,
-                    pubDate: pubDate ? parseDate(pubDate) : undefined,
-                };
-                return dataItem;
+        let items = cards
+            .toArray()
+            .map((el) => {
+                const a = $(el);
+                const href = a.attr('href');
+                const title = a.find('h3, h2, .title').text().trim() || a.attr('title') || a.text().trim();
+                if (!href || !title || href.startsWith('https://shopping.uol.com.br')) {
+                    return null;
+                }
+                const link = new URL(href, base).href;
+                const itemDescription = a.find('p, .summary, .subtitle').text().trim();
+                return { title, link, description: itemDescription };
             })
-        )
-    );
+            .filter((item): item is Exclude<typeof item, null> => item !== null)
+            .filter((item, index, self) => index === self.findIndex((t) => t.link === item.link));
 
-    return {
-        title: `Lance! - ${feedTitle}`,
-        link: url,
-        item: items,
-        description: `Notícias sobre ${feedTitle} no Lance!.`,
-        language: 'pt-br',
-    };
+        const limit = ctx.req.query('limit') ? Number.parseInt(ctx.req.query('limit'), 10) : 15;
+
+        return {
+            title: pageTitle,
+            link: base,
+            item: items.slice(0, Math.min(limit, 50)),
+            description,
+            language: 'pt-br',
+        };
+    });
 };
+
+export const fetchUOLTime = (ctx: Context) => fetcher(`times/${ctx.req.param('slug')}`, ctx);
+export const fetchUOLCampeonato = (ctx: Context) => fetcher(`campeonatos/${ctx.req.param('slug')}`, ctx);

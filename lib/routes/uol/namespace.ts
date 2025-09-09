@@ -3,9 +3,9 @@ import { route as time } from './time';
 import { route as campeonato } from './campeonato';
 
 export const namespace: Namespace = {
-    name: 'Lance!',
-    url: 'lance.com.br',
-    description: 'Notícias de futebol do portal Lance!.',
+    name: 'UOL Esporte',
+    url: 'uol.com.br/esporte/futebol',
+    description: 'Notícias de futebol do portal UOL Esporte.',
     categories: ['sports', 'traditional-media'],
     routes: [time, campeonato],
 };

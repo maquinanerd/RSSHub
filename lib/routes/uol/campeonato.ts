@@ -1,33 +1,31 @@
 import type { Route } from '@/types';
-import { fetchLance } from './utils';
+import { fetchUOLCampeonato } from './utils';
 
 export const route: Route = {
-    path: '/campeonato/:slug+',
+    path: '/campeonato/:slug',
     name: 'Notícias de Campeonato',
-    url: 'https://www.lance.com.br',
+    url: 'https://www.uol.com.br/esporte/futebol/',
     maintainers: ['gemini-code-assist'],
-    example: '/lance/campeonato/brasileirao',
+    example: '/uol/campeonato/brasileirao-serie-a',
     parameters: {
-        slug: 'ID do campeonato, encontrado na URL do site. Ex: `brasileirao` ou `tudo-sobre/campeonato-italiano`.',
+        slug: 'ID do campeonato, encontrado na URL do site. Ex: `brasileirao-serie-a`.',
     },
     categories: ['sports', 'traditional-media'],
-    description: 'Retorna as notícias mais recentes de um campeonato de futebol específico do Lance!.',
-    handler: fetchLance,
+    description: 'Retorna as notícias mais recentes de um campeonato de futebol específico do UOL Esporte.',
+    handler: fetchUOLCampeonato,
     radar: [
         {
             source: [
-                'lance.com.br/champions-league',
-                'lance.com.br/premier-league',
-                'lance.com.br/la-liga',
-                'lance.com.br/bundesliga',
-                'lance.com.br/tudo-sobre/campeonato-italiano',
-                'lance.com.br/ligue-1',
-                'lance.com.br/copa-do-brasil',
-                'lance.com.br/brasileirao',
-                'lance.com.br/libertadores',
-                'lance.com.br/copa-do-mundo',
+                'uol.com.br/esporte/futebol/campeonatos/brasileirao-serie-a',
+                'uol.com.br/esporte/futebol/campeonatos/copa-do-brasil',
+                'uol.com.br/esporte/futebol/campeonatos/libertadores',
+                'uol.com.br/esporte/futebol/campeonatos/copa-sul-americana',
+                'uol.com.br/esporte/futebol/campeonatos/liga-dos-campeoes',
+                'uol.com.br/esporte/futebol/campeonatos/campeonato-ingles',
+                'uol.com.br/esporte/futebol/campeonatos/campeonato-espanhol',
+                'uol.com.br/esporte/futebol/campeonatos/campeonato-italiano',
             ],
-            target: (params, url) => `/lance/campeonato/${new URL(url).pathname.substring(1)}`,
+            target: (params, url) => `/uol/campeonato/${new URL(url).pathname.split('/').pop()}`,
         },
     ],
 };
