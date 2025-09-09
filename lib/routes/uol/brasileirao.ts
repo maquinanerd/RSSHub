@@ -4,7 +4,6 @@ import { URL } from 'node:url';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { load } from 'cheerio';
-import { fetchChampionshipNews } from './utils';
 
 export const route: Route = {
     path: '/brasileirao',
@@ -14,12 +13,13 @@ export const route: Route = {
     maintainers: ['gemini-code-assist'],
     handler: (ctx: Context) => {
         const base = 'https://esporte.uol.com.br/futebol/campeonatos/brasileirao/';
+        const feedTitle = 'UOL Esporte – Brasileirão (notícias)';
+        const feedDescription = 'Notícias sobre o Campeonato Brasileiro no UOL Esporte.';
 
         return cache.tryGet(base, async () => {
             const { data: html } = await got(base);
             const $ = load(html);
 
-            // Seleciona somente os cards de notícias, ignorando tabelas e placares do topo.
             const cards = $('article a, .results-items a, .cards-list a, .thumb-caption a');
 
             let items = cards
@@ -47,13 +47,12 @@ export const route: Route = {
             }
 
             return {
-                title: 'UOL Esporte – Brasileirão (notícias)',
+                title: feedTitle,
                 link: base,
                 item: items.slice(0, Math.min(limit, 50)),
-                description: 'Notícias sobre o Campeonato Brasileiro no UOL Esporte.',
+                description: feedDescription,
                 language: 'pt-br',
             };
         });
     },
-    handler: (ctx) => fetchChampionshipNews('brasileirao', 'UOL Esporte – Brasileirão (notícias)', 'Notícias sobre o Campeonato Brasileiro no UOL Esporte.', ctx),
 };
