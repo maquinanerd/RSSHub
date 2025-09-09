@@ -17,7 +17,7 @@ Este arquivo documenta as rotas disponíveis para os portais de notícias esport
 
 **Notícias de Campeonato**
 - **Caminho:** `/lance/campeonato/:slug+`
-- **Exemplo:** `/lance/campeonato/brasileirao`
+- **Exemplo:** `/lance/campeonato/brasileirao-serie-a.html`
 
 ---
 

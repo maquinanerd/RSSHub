@@ -6,9 +6,9 @@ export const route: Route = {
     name: 'Notícias de Campeonato',
     url: 'https://www.lance.com.br',
     maintainers: ['gemini-code-assist'],
-    example: '/lance/campeonato/brasileirao',
+    example: '/lance/campeonato/brasileirao-serie-a.html',
     parameters: {
-        slug: 'ID do campeonato, encontrado na URL do site. Ex: `brasileirao` ou `tudo-sobre/campeonato-italiano`.',
+        slug: 'ID do campeonato, encontrado na URL do site. Ex: `brasileirao-serie-a.html` ou `tudo-sobre/campeonato-italiano`.',
     },
     categories: ['sports', 'traditional-media'],
     description: 'Retorna as notícias mais recentes de um campeonato de futebol específico do Lance!.',
@@ -16,19 +16,18 @@ export const route: Route = {
     radar: [
         {
             source: [
-                'lance.com.br/champions-league',
-                'lance.com.br/premier-league',
-                'lance.com.br/la-liga',
-                'lance.com.br/bundesliga',
+                'lance.com.br/brasileirao-serie-a.html',
+                'lance.com.br/copa-do-brasil.html',
+                'lance.com.br/libertadores.html',
+                'lance.com.br/champions-league.html',
+                'lance.com.br/premier-league.html',
+                'lance.com.br/la-liga.html',
+                'lance.com.br/bundesliga.html',
                 'lance.com.br/tudo-sobre/campeonato-italiano',
-                'lance.com.br/ligue-1',
-                'lance.com.br/copa-do-brasil',
-                'lance.com.br/brasileirao',
-                'lance.com.br/libertadores',
-                'lance.com.br/copa-do-mundo',
+                'lance.com.br/ligue-1.html',
+                'lance.com.br/copa-do-mundo.html',
             ],
             target: (params, url) => `/lance/campeonato/${new URL(url).pathname.substring(1)}`,
         },
     ],
 };
-
