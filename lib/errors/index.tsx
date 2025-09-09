@@ -6,7 +6,11 @@ import * as Sentry from '@sentry/node';
 import logger from '@/utils/logger';
 import Error from '@/views/error';
 
+import { FetchError, RequestError } from 'ofetch';
+import { HTTPError } from 'hono/http-exception';
 import NotFoundError from './types/not-found';
+import RejectError from './types/reject';
+import RequestInProgressError from './types/request-in-progress';
 
 import { requestMetric } from '@/utils/otel';
 
@@ -44,26 +48,18 @@ export const errorHandler: ErrorHandler = (error, ctx) => {
     }
 
     let errorMessage = (process.env.NODE_ENV || process.env.VERCEL_ENV) === 'production' ? error.message : error.stack || error.message;
-    switch (error.constructor.name) {
-        case 'HTTPError':
-        case 'RequestError':
-        case 'FetchError':
-            ctx.status(503);
-            break;
-        case 'RequestInProgressError':
-            ctx.header('Cache-Control', `public, max-age=${config.requestTimeout / 1000}`);
-            ctx.status(503);
-            break;
-        case 'RejectError':
-            ctx.status(403);
-            break;
-        case 'NotFoundError':
-            ctx.status(404);
-            errorMessage += 'The route does not exist or has been deleted.';
-            break;
-        default:
-            ctx.status(503);
-            break;
+    if (error instanceof HTTPError || error instanceof RequestError || error instanceof FetchError) {
+        ctx.status(503);
+    } else if (error instanceof RequestInProgressError) {
+        ctx.header('Cache-Control', `public, max-age=${config.requestTimeout / 1000}`);
+        ctx.status(503);
+    } else if (error instanceof RejectError) {
+        ctx.status(403);
+    } else if (error instanceof NotFoundError) {
+        ctx.status(404);
+        errorMessage += 'The route does not exist or has been deleted.';
+    } else {
+        ctx.status(503);
     }
     const message = `${error.name}: ${errorMessage}`;
 
