@@ -53,9 +53,9 @@ export const errorHandler: ErrorHandler = (error, ctx) => {
     } else if (error instanceof RequestInProgressError) {
         ctx.header('Cache-Control', `public, max-age=${config.requestTimeout / 1000}`);
         ctx.status(503);
-    } else if (error instanceof RejectError) {
+    } else if (error instanceof RejectError || error.name === 'RejectError') {
         ctx.status(403);
-    } else if (error instanceof NotFoundError) {
+    } else if (error instanceof NotFoundError || error.name === 'NotFoundError') {
         ctx.status(404);
         errorMessage += 'The route does not exist or has been deleted.';
     } else {
