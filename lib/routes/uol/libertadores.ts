@@ -1,58 +1,48 @@
 import type { Route } from '@/types';
-import type { Context } from 'hono';
-import { URL } from 'node:url';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { load } from 'cheerio';
+import { URL } from 'url';
 
 export const route: Route = {
     path: '/libertadores',
     name: 'Libertadores - notícias',
     example: '/uol/libertadores?limit=10',
-    categories: ['sports', 'traditional-media'],
-    maintainers: ['gemini-code-assist'],
-    handler: (ctx: Context) => {
+    async handler(ctx) {
         const base = 'https://esporte.uol.com.br/futebol/campeonatos/libertadores/';
-        const feedTitle = 'UOL Esporte – Libertadores (notícias)';
-        const feedDescription = 'Notícias sobre a Copa Libertadores no UOL Esporte.';
 
-        return cache.tryGet(base, async () => {
-            const { data: html } = await got(base);
-            const $ = load(html);
+        const html = await cache.tryGet(base, async () => (await got(base)).data, 5 * 60);
+        const $ = load(html);
 
-            const cards = $('article a, .results-items a, .cards-list a, .thumb-caption a');
+        const cards = $('article a, .results-items a, .cards-list a, .thumb-caption a');
 
-            let items = cards
-                .toArray()
-                .map((el) => {
-                    const a = $(el);
-                    const href = a.attr('href');
-                    const title = a.find('h3, h2, .title').text().trim() || a.attr('title') || a.text().trim();
-                    if (!href || !title || href.startsWith('https://shopping.uol.com.br')) {
-                        return null;
-                    }
-                    const link = new URL(href, base).href;
-                    const description = a.find('p, .summary, .subtitle').text().trim();
-                    return { title, link, description };
-                })
-                .filter((item): item is Exclude<typeof item, null> => item !== null)
-                .filter((item, index, self) => index === self.findIndex((t) => t.link === item.link));
+        let items = cards
+            .toArray()
+            .map((el) => {
+                const a = $(el);
+                const href = a.attr('href');
+                const title = a.find('h3, h2, .title').text().trim() || a.attr('title') || a.text().trim();
+                if (!href || !title) {
+                    return null;
+                }
 
-            const limit = ctx.req.query('limit') ? Number.parseInt(ctx.req.query('limit'), 10) : 15;
-            const filter = ctx.req.query('filter');
+                const link = new URL(href, base).href;
+                const description = a.find('p, .summary, .subtitle').text().trim();
+                return { title, link, description };
+            })
+            .filter(Boolean) as Array<{ title: string; link: string; description?: string }>;
 
-            if (filter) {
-                const regex = new RegExp(filter, 'i');
-                items = items.filter((it) => regex.test(it.title));
-            }
+        const limit = Math.min(parseInt((ctx.query.limit as string) || '15', 10), 50);
+        const filter = ctx.query.filter ? new RegExp(String(ctx.query.filter), 'i') : null;
+        if (filter) {
+            items = items.filter((it) => filter.test(it.title));
+        }
+        items = items.slice(0, limit);
 
-            return {
-                title: feedTitle,
-                link: base,
-                item: items.slice(0, Math.min(limit, 50)),
-                description: feedDescription,
-                language: 'pt-br',
-            };
-        });
+        ctx.state.data = {
+            title: 'UOL Esporte – Libertadores (notícias)',
+            link: base,
+            item: items,
+        };
     },
 };
