@@ -20,24 +20,16 @@ export const errorHandler: ErrorHandler = (error, ctx) => {
     const hasMatchedRoute = matchedRoute !== '/*';
 
     const debug = getDebugInfo();
-    try {
-        if (ctx.res.headers.get('RSSHub-Cache-Status')) {
-            debug.hitCache++;
-        }
-    } catch {
-        // ignore
+    if (ctx.res.headers.get('RSSHub-Cache-Status')) {
+        debug.hitCache++;
     }
     debug.error++;
 
-    if (!debug.errorPaths[requestPath]) {
-        debug.errorPaths[requestPath] = 0;
-    }
-    debug.errorPaths[requestPath]++;
+    debug.errorPaths[requestPath] = (debug.errorPaths[requestPath] || 0) + 1;
 
-    if (!debug.errorRoutes[matchedRoute] && hasMatchedRoute) {
-        debug.errorRoutes[matchedRoute] = 0;
+    if (hasMatchedRoute) {
+        debug.errorRoutes[matchedRoute] = (debug.errorRoutes[matchedRoute] || 0) + 1;
     }
-    hasMatchedRoute && debug.errorRoutes[matchedRoute]++;
     setDebugInfo(debug);
 
     if (config.sentry.dsn) {
